@@ -1,6 +1,6 @@
 # Arduino 8 Bits calculator
 
-Project developed in the discipline of computer architecture.
+Project developed by **Everaldo Chaves de Oliveira Júnior** in the discipline of computer architecture.
 
 ## Circuit
 The circuit was developed at tinkercad. The final circuit can be found below:

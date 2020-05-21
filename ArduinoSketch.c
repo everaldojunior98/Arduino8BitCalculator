@@ -30,6 +30,7 @@ class Number
 			pinMode(LedClock, OUTPUT);
 			pinMode(LedLatch, OUTPUT);
 			pinMode(LedData, OUTPUT);
+			pinMode(ButtonRead, INPUT);
 		}
 		
 		void WriteBits()
@@ -43,7 +44,7 @@ class Number
 				digitalWrite(LedClock, LOW);
 				digitalWrite(LedData, Bits[x]);
 				digitalWrite(LedClock, HIGH);
-			}    
+			}
 			 
 			//Close data flow
 			digitalWrite(LedLatch, HIGH);
@@ -52,50 +53,30 @@ class Number
 		void ReadButtons()
 		{
 			int read = analogRead(ButtonRead);
-			
+		
 			ButtonCurrentState = read < 20 ? 0 : 1;
 			
 			if(ButtonLastState != ButtonCurrentState)
 			{
 				if(read >= 400)//bit8
-				{
 					Bits[7] = !Bits[7];
-				}
 				else if(read >= 300 && read < 400)//bit7
-				{
 					Bits[6] = !Bits[6];
-					
-				}
 				else if(read >= 200 && read < 300)//bit6
-				{
 					Bits[5] = !Bits[5];
-					
-				}
 				else if(read >= 100 && read < 200)//bit5
-				{
 					Bits[4] = !Bits[4];
-					
-				}
 				else if(read >= 80 && read < 100)//bit4
-				{
 					Bits[3] = !Bits[3];
-					delay(10);
-				}
 				else if(read >= 60 && read < 80)//bit3
-				{
 					Bits[2] = !Bits[2];
-					
-				}
 				else if(read >= 40 && read < 60)//bit2
-				{
 					Bits[1] = !Bits[1];
-					
-				}
 				else if(read >= 20 && read < 40)//bit1
-				{
 					Bits[0] = !Bits[0];
 					
-				}
+				//Write all bits
+				WriteBits();
 			}
 			
 			ButtonLastState = ButtonCurrentState;
@@ -156,13 +137,12 @@ struct RippleCarryAdderResult RippleCarryAdder(Number* n1, Number* n2)
 //DEFAULT METHODS
 void setup()
 {
+	pinMode(A2, INPUT);
+  
 	//First multiplexer config
 	number1 = new Number(2, 3, 4, A0);
 	number2 = new Number(5, 6, 7, A1);
-	result = new Number(8, 9, 10, 0);
-	
-  	number1->Bits[0] = 1;
-  	number2->Bits[7] = 1;
+	result = new Number(8, 9, 10, -1);
   
 	Serial.begin(9600);
 }
@@ -170,15 +150,58 @@ void setup()
 void loop()
 {
   	number1->ReadButtons();
-	number1->WriteBits();
-	
   	number2->ReadButtons();
-	number2->WriteBits();
+		
+	int actionButtonRead = analogRead(A2);
 	
-	result->WriteBits();
+	//Sum action
+	if(actionButtonRead >= 600)
+	{
+		//Execute the sum
+		RippleCarryAdderResult adderResult = RippleCarryAdder(number1, number2);
 	
-	RippleCarryAdderResult adderResult = RippleCarryAdder(number1, number2);
-	
-	for(int i = 0; i < 8; i++)
-		result->Bits[i] = adderResult.Sum[i];
+		//Overflow, turn on all result leds and torn off
+		if(adderResult.Carry)
+		{
+			for(int x = 0; x < 4; x++)
+			{
+				//Write on result number
+				for(int i = 0; i < 8; i++)
+					result->Bits[i] = 1;
+				
+				result->WriteBits();
+				delay(300);
+				
+				for(int i = 0; i < 8; i++)
+					result->Bits[i] = 0;
+
+				result->WriteBits();
+				delay(300);				
+			}
+		}
+		else
+		{
+			//Write on result number
+			for(int i = 0; i < 8; i++)
+				result->Bits[i] = adderResult.Sum[i];
+			
+			//Write on leds
+			result->WriteBits();
+		}
+	}
+	//Reset action
+	else if(actionButtonRead > 0 && actionButtonRead < 600)
+	{
+		//Reset all numbers
+		for(int i = 0; i < 8; i++)
+		{
+			number1->Bits[i] = 0;
+			number2->Bits[i] = 0;
+			result->Bits[i] = 0;
+		}
+		
+		number1->WriteBits();
+		number2->WriteBits();
+		result->WriteBits();
+	}
 }

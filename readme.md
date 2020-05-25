@@ -6,6 +6,9 @@ Project developed by **Everaldo Chaves de Oliveira Júnior** in the discipline o
 The circuit was developed at tinkercad. The final circuit can be found below:
 
 ## Progress
+### 25/05/20
+![Circuit4](https://raw.githubusercontent.com/everaldojunior98/Arduino8BitCalculator/master/Circuits/25-05.png)
+Adding base to make other operations (div, mult, sub).
 ### 21/05/20
 ![Circuit3](https://raw.githubusercontent.com/everaldojunior98/Arduino8BitCalculator/master/Circuits/21-05.png)
 Adding a button to make the sum. Adding verification in overflow case. Finalizing the circuit.

@@ -19,6 +19,10 @@ class Number
 		bool Bits[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 		
 		//Constructor
+		Number()
+		{
+		}
+		
 		Number(int ledClock, int ledLatch, int ledData, int buttonRead)
 		{
 			LedClock = ledClock;
@@ -134,6 +138,26 @@ struct RippleCarryAdderResult RippleCarryAdder(Number* n1, Number* n2)
 	return adderResult;
 }
 
+//Turn on all result leds and torn off
+void ShowOverflow()
+{
+	for(int x = 0; x < 4; x++)
+	{
+		//Write on result number
+		for(int i = 0; i < 8; i++)
+			result->Bits[i] = 1;
+		
+		result->WriteBits();
+		delay(300);
+		
+		for(int i = 0; i < 8; i++)
+			result->Bits[i] = 0;
+
+		result->WriteBits();
+		delay(300);
+	}
+}
+
 //DEFAULT METHODS
 void setup()
 {
@@ -155,29 +179,16 @@ void loop()
 	int actionButtonRead = analogRead(A2);
 	
 	//Sum action
-	if(actionButtonRead >= 600)
+	if(actionButtonRead >= 500)
 	{
 		//Execute the sum
 		RippleCarryAdderResult adderResult = RippleCarryAdder(number1, number2);
 	
-		//Overflow, turn on all result leds and torn off
+		//Overflow
 		if(adderResult.Carry)
 		{
-			for(int x = 0; x < 4; x++)
-			{
-				//Write on result number
-				for(int i = 0; i < 8; i++)
-					result->Bits[i] = 1;
-				
-				result->WriteBits();
-				delay(300);
-				
-				for(int i = 0; i < 8; i++)
-					result->Bits[i] = 0;
-
-				result->WriteBits();
-				delay(300);				
-			}
+			//Show Overflow warning
+			ShowOverflow();
 		}
 		else
 		{
@@ -189,8 +200,23 @@ void loop()
 			result->WriteBits();
 		}
 	}
+	//Subtraction action
+	else if(actionButtonRead >= 300 && actionButtonRead < 400)
+	{
+		
+	}
+	//Multiplication action
+	else if(actionButtonRead >= 200 && actionButtonRead < 300)
+	{
+		
+	}
+	//Division action
+	else if(actionButtonRead >= 100 && actionButtonRead < 200)
+	{
+		
+	}
 	//Reset action
-	else if(actionButtonRead > 0 && actionButtonRead < 600)
+	else if(actionButtonRead > 0 && actionButtonRead < 100)
 	{
 		//Reset all numbers
 		for(int i = 0; i < 8; i++)

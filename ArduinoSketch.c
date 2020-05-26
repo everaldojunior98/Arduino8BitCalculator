@@ -89,20 +89,23 @@ class Number
 
 struct FullAdderResult
 {
-	bool Sum;
-	bool Carry;
+	bool Sum = 0;
+	bool Carry = 0;
 };
 
 struct RippleCarryAdderResult
 {
 	bool Sum[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	bool Carry;
+	bool Carry = 0;
 };
 
 //VARIABLES
 Number* number1;
 Number* number2;
 Number* result;
+
+int actionButtonsPort = A2;
+int signalLedPort = 11;
 
 //ADDER METHODS
 struct FullAdderResult FullAdder(bool a, bool b, bool c)
@@ -161,7 +164,8 @@ void ShowOverflow()
 //DEFAULT METHODS
 void setup()
 {
-	pinMode(A2, INPUT);
+	pinMode(actionButtonsPort, INPUT);
+	pinMode(signalLedPort, OUTPUT);
   
 	//First multiplexer config
 	number1 = new Number(2, 3, 4, A0);
@@ -176,7 +180,7 @@ void loop()
   	number1->ReadButtons();
   	number2->ReadButtons();
 		
-	int actionButtonRead = analogRead(A2);
+	int actionButtonRead = analogRead(actionButtonsPort);
 	
 	//Sum action
 	if(actionButtonRead >= 500)
@@ -203,17 +207,222 @@ void loop()
 	//Subtraction action
 	else if(actionButtonRead >= 300 && actionButtonRead < 400)
 	{
+        //Transform bin number to twos complement
+		Number* negativeNumber = new Number();
+        for(int i = 0; i < 8; i++)
+        {
+            negativeNumber->Bits[i] = number2->Bits[i];
+            if(number2->Bits[i])
+            {
+                for(int j = i + 1; j < 8; j++)
+                    negativeNumber->Bits[j] = !number2->Bits[j];
+                break;
+            }
+        }
+
+        //Execute the sum
+		RippleCarryAdderResult adderResult = RippleCarryAdder(number1, negativeNumber);
 		
+		//Invert result if carry was 0
+		if(!adderResult.Carry)
+		{
+			digitalWrite(signalLedPort, HIGH);
+			for(int i = 0; i < 8; i++)
+			{
+				if(adderResult.Sum[i])
+				{
+					for(int j = i + 1; j < 8; j++)
+						adderResult.Sum[j] = !adderResult.Sum[j];
+					break;
+				}
+			}
+		}
+		
+		//Write on result number
+		for(int i = 0; i < 8; i++)
+			result->Bits[i] = adderResult.Sum[i];
+		
+		//Write on leds
+		result->WriteBits();
+
+		//Free arduino memory
+		free(negativeNumber);
 	}
 	//Multiplication action
 	else if(actionButtonRead >= 200 && actionButtonRead < 300)
 	{
+		//Create a new number to save the multiplication
+		Number* multNumber = new Number();
 		
+		for(int i = 0; i < 8; i++)
+		{
+			Number* tempNumber = new Number();
+			for(int j = 0; j < 8; j++)
+			{
+				if(i + j > 8 && (number2->Bits[i] * number1->Bits[j]) != 0)
+				{
+					//Display overflow error
+					ShowOverflow();
+					
+					//Free the memory
+					free(tempNumber);
+					free(multNumber);
+					return;
+				}
+				else if(i + j < 8)
+				{
+					//Execute bit to bit multiplication
+					tempNumber->Bits[j + i] = number2->Bits[i] * number1->Bits[j];	
+				}
+			}
+			
+			//Execute the sum
+			RippleCarryAdderResult adderResult = RippleCarryAdder(multNumber, tempNumber);
+			
+			if(adderResult.Carry)
+			{
+				//Display overflow error
+				ShowOverflow();
+				
+				//Free the memory
+				free(tempNumber);
+				free(multNumber);
+				return;
+			}
+			else
+			{
+				//Save the sum
+				for(int x = 0; x < 8; x++)
+					multNumber->Bits[x] = adderResult.Sum[x];
+				
+				//Free the memory
+				free(tempNumber);
+			}
+		}
+		
+		//Write on result number
+		for(int i = 0; i < 8; i++)
+			result->Bits[i] = multNumber->Bits[i];
+		
+		//Write on leds
+		result->WriteBits();
+		
+		//Free the memory
+		free(multNumber);
 	}
-	//Division action
+	//Division action (division using successive sum)
 	else if(actionButtonRead >= 100 && actionButtonRead < 200)
 	{
+		bool greater = false;
+		Number* currentMultiplier = new Number();
+		Number* numberOne = new Number();
+		numberOne->Bits[0] = 1;
 		
+		while(!greater)
+		{
+			//Create a new number to save the multiplication
+			Number* multNumber = new Number();
+			
+			for(int i = 0; i < 8; i++)
+			{
+				Number* tempNumber = new Number();
+				for(int j = 0; j < 8; j++)
+				{
+					if(i + j > 8 && (currentMultiplier->Bits[i] * number2->Bits[j]) != 0)
+					{
+						//Display overflow error
+						ShowOverflow();
+						
+						//Free the memory
+						free(tempNumber);
+						free(multNumber);
+						free(currentMultiplier);
+						free(numberOne);
+						return;
+					}
+					else if(i + j < 8)
+					{
+						//Execute bit to bit multiplication
+						tempNumber->Bits[j + i] = currentMultiplier->Bits[i] * number2->Bits[j];	
+					}
+				}
+				
+				//Execute the sum
+				RippleCarryAdderResult adderResult = RippleCarryAdder(multNumber, tempNumber);
+				
+				if(adderResult.Carry)
+				{
+					//Display overflow error
+					ShowOverflow();
+					
+					//Free the memory
+					free(tempNumber);
+					free(multNumber);
+					free(currentMultiplier);
+					free(numberOne);
+					return;
+				}
+				else
+				{
+					//Save the sum
+					for(int x = 0; x < 8; x++)
+						multNumber->Bits[x] = adderResult.Sum[x];
+					
+					//Free the memory
+					free(tempNumber);
+				}
+			}
+			
+			//Write on result number
+			if(number1->Bits[0] == multNumber->Bits[0]
+			&& number1->Bits[1] == multNumber->Bits[1]
+			&& number1->Bits[2] == multNumber->Bits[2]
+			&& number1->Bits[3] == multNumber->Bits[3]
+			&& number1->Bits[4] == multNumber->Bits[4]
+			&& number1->Bits[5] == multNumber->Bits[5]
+			&& number1->Bits[6] == multNumber->Bits[6]
+			&& number1->Bits[7] == multNumber->Bits[7])
+			{
+				greater = true;
+				
+				//Write on result number
+				for(int i = 0; i < 8; i++)
+					result->Bits[i] = currentMultiplier->Bits[i];
+				
+				//Write on leds
+				result->WriteBits();
+			}
+			else
+			{
+				//Execute the sum
+				RippleCarryAdderResult adderResult = RippleCarryAdder(currentMultiplier, numberOne);
+					
+				if(adderResult.Carry)
+				{
+					//Display overflow error
+					ShowOverflow();
+					
+					//Free the memory
+					free(multNumber);
+					free(currentMultiplier);
+					free(numberOne);
+					return;
+				}
+				else
+				{
+					//Save the sum
+					for(int x = 0; x < 8; x++)
+						currentMultiplier->Bits[x] = adderResult.Sum[x];
+				}
+			}
+			
+			//Free the memory
+			free(multNumber);
+		}
+		
+		//Free the memory
+		free(currentMultiplier);
+		free(numberOne);
 	}
 	//Reset action
 	else if(actionButtonRead > 0 && actionButtonRead < 100)
@@ -229,5 +438,6 @@ void loop()
 		number1->WriteBits();
 		number2->WriteBits();
 		result->WriteBits();
+		digitalWrite(signalLedPort, LOW);
 	}
 }

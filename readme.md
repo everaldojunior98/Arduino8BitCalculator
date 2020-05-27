@@ -6,10 +6,13 @@ Project developed by **Everaldo Chaves de Oliveira Júnior** in the discipline o
 The circuit was developed at tinkercad. The final circuit can be found below:
 
 ## Progress
+### 27/05/20
+![Circuit6](https://raw.githubusercontent.com/everaldojunior98/Arduino8BitCalculator/master/Circuits/27-05.png)
+Adding non-entire division.
 ### 26/05/20
 ![Circuit5](https://raw.githubusercontent.com/everaldojunior98/Arduino8BitCalculator/master/Circuits/26-05.png)
-Adding other functions, subtraction (based on twos complement), multiplication and division (only integer division);
-Adding led to indicate the number sign;
+Adding other functions, subtraction (based on twos complement), multiplication and division (only integer division).
+Adding led to indicate the number sign.
 ### 25/05/20
 ![Circuit4](https://raw.githubusercontent.com/everaldojunior98/Arduino8BitCalculator/master/Circuits/25-05.png)
 Adding base to make other operations (div, mult, sub).

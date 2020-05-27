@@ -1,4 +1,5 @@
 # Arduino 8 Bits calculator
+### Status: **Finished!**
 
 Project developed by **Everaldo Chaves de Oliveira Júnior** in the discipline of computer architecture.
 

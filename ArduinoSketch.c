@@ -373,24 +373,52 @@ void loop()
 				}
 			}
 			
+			//Compare if multNumber is greater of number1
+			bool canSave = false;
+			for(int i = 7; i >= 0; i--)
+			{
+				if(!multNumber->Bits[i] && !number1->Bits[i] || multNumber->Bits[i] && number1->Bits[i])
+					continue;
+				else if(!multNumber->Bits[i] && number1->Bits[i])
+					break;
+				else
+				{
+					canSave = true;
+					break;
+				}
+			}
+
 			//Write on result number
-			if(number1->Bits[0] == multNumber->Bits[0]
-			&& number1->Bits[1] == multNumber->Bits[1]
-			&& number1->Bits[2] == multNumber->Bits[2]
-			&& number1->Bits[3] == multNumber->Bits[3]
-			&& number1->Bits[4] == multNumber->Bits[4]
-			&& number1->Bits[5] == multNumber->Bits[5]
-			&& number1->Bits[6] == multNumber->Bits[6]
-			&& number1->Bits[7] == multNumber->Bits[7])
+			if(canSave)
 			{
 				greater = true;
 				
+				//Subtract one from result
+				Number* negativeNumber = new Number();
+				negativeNumber->Bits[0] = 1;
+				
+				for(int i = 0; i < 8; i++)
+				{
+					if(negativeNumber->Bits[i])
+					{
+						for(int j = i + 1; j < 8; j++)
+							negativeNumber->Bits[j] = !negativeNumber->Bits[j];
+						break;
+					}
+				}
+				
+				//Execute the sum
+				RippleCarryAdderResult adderResult = RippleCarryAdder(currentMultiplier, negativeNumber);
+				
 				//Write on result number
 				for(int i = 0; i < 8; i++)
-					result->Bits[i] = currentMultiplier->Bits[i];
+					result->Bits[i] = adderResult.Sum[i];
 				
 				//Write on leds
 				result->WriteBits();
+				
+				//Free memory
+				free(negativeNumber);
 			}
 			else
 			{
